@@ -10,6 +10,8 @@ import {ic_format_underlined} from 'react-icons-kit/md/ic_format_underlined'
 import {ic_format_list_numbered} from 'react-icons-kit/md/ic_format_list_numbered'
 import {image} from 'react-icons-kit/iconic/image';
 // import imageExtensions from 'image-extensions'
+import isUrl from 'is-url'
+
 
 import styled from '@emotion/styled'
 
@@ -68,9 +70,9 @@ class TextEditor extends Component{
         return (
             <Fragment>
                 <FormatToolbar>
-                <button onMouseDown={this.onClickImage}>
-                    <Icon icon={image}/>
-                </button>
+                    <button onPointerDown={this.onClickImage}>
+                        <Icon icon={image}/>
+                    </button>
                     <button 
                         onPointerDown={event => this.onClickMark(event, 'bold')}>
                         <Icon icon={bold}/>
@@ -105,7 +107,8 @@ class TextEditor extends Component{
                 value={this.state.value} 
                 onChange={this.onChange} 
                 onKeyDown = {this.onKeyDown}
-                renderMark = {this.renderMark}/>
+                renderMark = {this.renderMark}
+                renderNode={this.renderNode}/>
             </Fragment>
             
         )
@@ -177,12 +180,27 @@ class TextEditor extends Component{
         /* calling the  onChange method we declared */
         this.onChange(change);
     };
+    //render node
+    renderNode = (props, editor, next) => {
+        const { attributes, node, isFocused } = props
+    
+        switch (node.type) {
+          case 'image': {
+            const src = node.data.get('src')
+            return <Image src={src} selected={isFocused} {...attributes} />
+          }
+    
+          default: {
+            return next()
+          }
+        }
+      }
     
     onClickImage = (event, editor, next) => {
         event.preventDefault()
         const src = window.prompt('Enter the URL of the image:')
         if (!src){
-            return next();
+            return;
         } 
         this.editor.command(insertImage, src)
     }
