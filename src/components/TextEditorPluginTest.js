@@ -1,7 +1,12 @@
 // Import the `Value` model.
 import React, {Component} from 'react'
+import InsertImages from 'slate-drop-or-paste-images'
 import { Editor } from 'slate-react';
 import { Value } from 'slate';
+import CollapseOnEscape from './collapse-on-escape'
+import SoftBreak from './soft-break'
+import WordCount from './word-count'
+
 
 // Create our initial value...
 const initialValue = Value.fromJSON({
@@ -23,7 +28,7 @@ const initialValue = Value.fromJSON({
         },
       ],
     },
-  })
+})
   //components
 // Define a React component renderer for our code blocks.
 function CodeNode(props) {
@@ -63,11 +68,14 @@ function CodeNode(props) {
   //create array of plugin
 
   const plugin = [
+      CollapseOnEscape(), SoftBreak(), WordCount(),
       MarkHotkey({  key: 'b', type: 'bold'}),
       MarkHotkey({  key: 'i', type: 'italic'}),
       MarkHotkey({  key: '`', type: 'code'}),
       MarkHotkey({  key: '~', type: 'strikethrough'}),
       MarkHotkey({  key: 'u', type: 'underline'}),
+      
+     
   ];
 
 
@@ -136,21 +144,7 @@ function CodeNode(props) {
         
     }
     //mark
-    // renderMark = (props, editor, next)=>{
-    //     switch(props.mark.type){
-    //         case 'bold':
-    //             return(
-    //                 <BoldMark {...props}/>
-    //             );
-    //             case 'italic':
-    //                 return(
-    //                     <ItalicMark {...props}/>
-    //                 );
-    //         default:
-    //             return next();
-    //     }
-        
-    // }
+    
     renderMark = (props, editor, next) => {
         switch (props.mark.type) {
           case 'bold':
