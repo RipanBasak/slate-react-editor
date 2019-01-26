@@ -1,211 +1,410 @@
-import React , { Component, Fragment } from 'react';
 import { Editor } from 'slate-react';
-import { Value } from 'slate';
+import {Block, Value } from 'slate';
 import Icon from 'react-icons-kit';
+import styled from '@emotion/styled'
+import imageExtensions from 'image-extensions'
+
+
+import React, {Component} from 'react'
+import initialValue from '../data/value.json'
+import { isKeyHotkey } from 'is-hotkey'
+import { Button, Toolbar } from '../components'
+// icon import react toolkit
 import { bold } from 'react-icons-kit/feather/bold';
 import { italic } from 'react-icons-kit/feather/italic';
 import {ic_list} from 'react-icons-kit/md/ic_list';
 import {ic_code} from 'react-icons-kit/md/ic_code';
 import {ic_format_underlined} from 'react-icons-kit/md/ic_format_underlined'
 import {ic_format_list_numbered} from 'react-icons-kit/md/ic_format_list_numbered'
+import {quoteSerifLeft} from 'react-icons-kit/iconic/quoteSerifLeft'
 import {image} from 'react-icons-kit/iconic/image';
-// import imageExtensions from 'image-extensions'
-import isUrl from 'is-url'
 
+/**
+ * Define the default node type.
+ *
+ * @type {String}
+ */
 
-import styled from '@emotion/styled'
+const DEFAULT_NODE = 'paragraph'
 
+/**
+ * Define hotkey matchers.
+ *
+ * @type {Function}
+ */
 
-
-
-import initialValue from '../data/value.json'
-// import { italic} from 'react-icons-kit/feather/italic';
-import {BoldMark, 
-    FormatToolbar, 
-    ItalicMark,
-    CodeMark,
-    UnderlineMark,
-    UnOrdernListMark} from './index';
+const isBoldHotkey = isKeyHotkey('mod+b')
+const isItalicHotkey = isKeyHotkey('mod+i')
+const isUnderlinedHotkey = isKeyHotkey('mod+u')
+const isCodeHotkey = isKeyHotkey('mod+`')
 
 // Update the initial content to be pulled from Local Storage if it exists.
 const existingValue = JSON.parse(localStorage.getItem('content'));
+const Image = styled('img')`
+  display: block;
+  max-width: 100%;
+  max-height: 20em;
+  box-shadow: ${props => (props.selected ? '0 0 0 2px blue;' : 'none')};
+`
+
+/*
+ * A function to determine whether a URL has an image extension.
+ *
+ * @param {String} url
+ * @return {Boolean}
+ */
+
+function isImage(url) {
+  return !!imageExtensions.find(url.endsWith)
+}
+
+/**
+ * A change function to standardize inserting images.
+ *
+ * @param {Editor} editor
+ * @param {String} src
+ * @param {Range} target
+ */
+
 function insertImage(editor, src, target) {
-    if (target) {
-      editor.select(target)
-    }
-  
-    editor.insertBlock({
-      type: 'image',
-      data: { src },
-    })
+  if (target) {
+    editor.select(target)
   }
-  const Image = styled('img')`
-    display: block;
-    max-width: 100%;
-    max-height: 20em;
-    box-shadow: ${props => (props.selected ? '0 0 0 2px blue;' : 'none')};`
 
+  editor.insertBlock({
+    type: 'image',
+    data: { src },
+  })
+}
 
-class TextEditor extends Component{
-    state ={
-        value:Value.fromJSON(existingValue || initialValue),
-    }
-    /**
+const schema = {
+  document: {
+    last: { type: 'paragraph' },
+    normalize: (editor, { code, node, child }) => {
+      switch (code) {
+        case 'last_child_type_invalid': {
+          const paragraph = Block.create('paragraph')
+          return editor.insertNodeByKey(node.key, node.nodes.size, paragraph)
+        }
+      }
+    },
+  },
+  blocks: {
+    image: {
+      isVoid: true,
+    },
+  },
+}
+//
+
+class TextEditor extends Component {
+  /**
+   * Deserialize the initial editor value.
+   *
+   * @type {Object}
+   */
+
+  // state = {
+  //   // value: Value.fromJSON(initialValue),
+  //   value: Value.fromJSON(existingValue || initialValue),
+  // }
+  state ={
+    value:Value.fromJSON(existingValue || initialValue),
+  }
+  
+
+  /**
+   * Check if the current selection has a mark with `type` in it.
+   *
+   * @param {String} type
+   * @return {Boolean}
+   */
+
+  hasMark = type => {
+    const { value } = this.state
+    return value.activeMarks.some(mark => mark.type == type)
+  }
+
+  /**
+   * Check if the any of the currently selected blocks are of `type`.
+   *
+   * @param {String} type
+   * @return {Boolean}
+   */
+
+  hasBlock = type => {
+    const { value } = this.state
+    return value.blocks.some(node => node.type == type)
+  }
+
+  /**
    * Store a reference to the `editor`.
    *
    * @param {Editor} editor
    */
 
-  ref = (editor) => {
+  ref = editor => {
     this.editor = editor
   }
-  hasBlock = type => {
-    const { value } = this.state
-    return value.blocks.some(node => node.type == type)
+
+  /**
+   * Render.
+   *
+   * @return {Element}
+   */
+
+  render() {
+    return (
+      <div>
+        <Toolbar>
+          <Button onMouseDown={this.onClickImage}>
+            <Icon icon={image}/>
+          </Button>
+          {this.renderMarkButton('bold', bold)}
+          {this.renderMarkButton('italic', italic)}
+          {this.renderMarkButton('underlined', ic_format_underlined)}
+          {this.renderMarkButton('code', ic_code)}
+         
+          {this.renderBlockButton('block-quote', quoteSerifLeft)}
+          {/* //Note: order and unorder list */}
+          {this.renderBlockButton('numbered-list', ic_list)}
+          {this.renderBlockButton('bulleted-list', ic_format_list_numbered)}
+        </Toolbar>
+        <Editor
+          spellCheck
+          autoFocus
+          placeholder="Enter some rich text..."
+          ref={this.ref}
+          schema={schema}
+          value={this.state.value}
+          onChange={this.onChange}
+          onKeyDown={this.onKeyDown}
+          renderNode={this.renderNode}
+          renderMark={this.renderMark}
+        />
+      </div>
+    )
   }
-    
-    
 
-    render(){
-        return (
-            <Fragment>
-                <FormatToolbar>
-                    <button onPointerDown={this.onClickImage}>
-                        <Icon icon={image}/>
-                    </button>
-                    <button 
-                        onPointerDown={event => this.onClickMark(event, 'bold')}>
-                        <Icon icon={bold}/>
-                    </button>
-                    <button 
-                        onPointerDown={event => this.onClickMark(event, 'italic')}>
-                        <Icon icon={italic}/>
-                    </button>
-                    <button
-                        onPointerDown={event => this.onClickMark(event, 'code')} >
-                        <Icon icon={ic_code}/>
-                    </button>
-                    <button
-                        onPointerDown={event => this.onClickMark(event, 'underline')} >
-                        <Icon icon={ic_format_underlined}/>
-                    </button>
-                    {/* Block code */}
-                    <button
-						onPointerDown={(e) => this.onClickMark(e, 'list')}
-						className="tooltip-icon-button">
-						<Icon icon={ ic_list} />
-					</button>
-                   
-                    <button
-                        onPointerDown={event => this.onClickMark(event, 'bulleted-list')}>
-                        <Icon icon={ic_format_list_numbered}/>
-                    </button>
-                    
-                </FormatToolbar>
-                <Editor 
-                ref={this.ref}
-                value={this.state.value} 
-                onChange={this.onChange} 
-                onKeyDown = {this.onKeyDown}
-                renderMark = {this.renderMark}
-                renderNode={this.renderNode}/>
-            </Fragment>
-            
-        )
-    }
-    // all the methods
-    onChange= ({ value })=>{
-        // Save the value to Local Storage.
-        const content = JSON.stringify(value.toJSON())
-        localStorage.setItem('content', content)
+  /**
+   * Render a mark-toggling toolbar button.
+   *
+   * @param {String} type
+   * @param {String} icon
+   * @return {Element}
+   */
 
-        this.setState({ value });
-    }
-    onKeyDown=(event, editor, next)=>{
-        // console.log(e, change);
-        let mark = '';
-        if(!event.ctrlKey){
-            return next();
-        }
-        // event.preventDefault();
-        switch(event.key){
-            case 'b': 
-                    mark= 'bold';
-                    break;
-            case 'i': 
-                    mark= 'italic';
-                    break;
-            case 'u': 
-                    mark= 'underline';
-                    break;
-            case 'c': 
-                    mark= 'code';
-                    break;
-            case 'l': 
-                mark= 'list';
-                return true;
-            
-            default: next();
-        }
+  renderMarkButton = (type, icon) => {
+    const isActive = this.hasMark(type)
 
-        event.preventDefault()
-        editor.toggleMark(mark)
-    }
-    renderMark = (props, editor, next)=>{
-        const { children, mark, attributes,node } = props
-        console.log(props);
+    return (
+      <Button
+        active={isActive}
+        onMouseDown={event => this.onClickMark(event, type)}
+      >
+      <Icon icon={icon}/>
+      </Button>
+    )
+  }
 
-        switch(mark.type){
-            case 'bold':
-                return <BoldMark {...props}/>;
-            case 'italic':
-                return <ItalicMark {...props}/>;
-            case 'code':
-                return <CodeMark {...props}/>;
-            case 'underline':
-                return <UnderlineMark {...props}/>;
-            case 'list':
-                return <UnOrdernListMark {...props}/>;
-            case 'image': {
-                const src = node.data.get('src')
-                return <Image src={src} {...attributes} />
-                }
-            default: next();
-        }
-    }
-    onClickMark = (event, type) => {
-        // console.log(type);
-        event.preventDefault();
-        const change =this.editor.toggleMark(type);
-        /* calling the  onChange method we declared */
-        this.onChange(change);
-    };
-    //render node
-    renderNode = (props, editor, next) => {
-        const { attributes, node, isFocused } = props
-    
-        switch (node.type) {
-          case 'image': {
-            const src = node.data.get('src')
-            return <Image src={src} selected={isFocused} {...attributes} />
-          }
-    
-          default: {
-            return next()
-          }
-        }
+  /**
+   * Render a block-toggling toolbar button.
+   *
+   * @param {String} type
+   * @param {String} icon
+   * @return {Element}
+   */
+
+  renderBlockButton = (type, icon) => {
+    let isActive = this.hasBlock(type)
+
+    if (['numbered-list', 'bulleted-list'].includes(type)) {
+      const { value: { document, blocks } } = this.state
+
+      if (blocks.size > 0) {
+        const parent = document.getParent(blocks.first().key)
+        isActive = this.hasBlock('list-item') && parent && parent.type === type
       }
-    
-    onClickImage = (event, editor, next) => {
-        event.preventDefault()
-        const src = window.prompt('Enter the URL of the image:')
-        if (!src){
-            return;
-        } 
-        this.editor.command(insertImage, src)
     }
-    
- 
+
+    return (
+      <Button
+        active={isActive}
+        onMouseDown={event => this.onClickBlock(event, type)}
+      >
+      <Icon icon={icon}/>
+      </Button>
+    )
+  }
+
+  /**
+   * Render a Slate node.
+   *
+   * @param {Object} props
+   * @return {Element}
+   */
+
+  renderNode = (props, editor, next) => {
+    const { attributes, children, node } = props
+
+    switch (node.type) {
+      case 'block-quote':
+        return <blockquote {...attributes}>{children}</blockquote>
+      case 'bulleted-list':
+        return <ul {...attributes}>{children}</ul>
+      case 'heading-one':
+        return <h1 {...attributes}>{children}</h1>
+      case 'heading-two':
+        return <h2 {...attributes}>{children}</h2>
+      case 'list-item':
+        return <li {...attributes}>{children}</li>
+      case 'numbered-list':
+        return <ol {...attributes}>{children}</ol>
+      case 'image': {
+        const src = node.data.get('src')
+        return <Image src={src} {...attributes} />
+      }
+      default:
+        return next()
+    }
+  }
+
+  /**
+   * Render a Slate mark.
+   *
+   * @param {Object} props
+   * @return {Element}
+   */
+
+  renderMark = (props, editor, next) => {
+    const { children, mark, attributes } = props
+
+    switch (mark.type) {
+      case 'bold':
+        return <strong {...attributes}>{children}</strong>
+      case 'code':
+        return <code {...attributes}>{children}</code>
+      case 'italic':
+        return <em {...attributes}>{children}</em>
+      case 'underlined':
+        return <u {...attributes}>{children}</u>
+      default:
+        return next()
+    }
+  }
+
+  /**
+   * On change, save the new `value`.
+   *
+   * @param {Editor} editor
+   */
+
+  onChange = ({ value }) => {
+    const content = JSON.stringify(value.toJSON())
+    localStorage.setItem('content', content)
+    this.setState({ value })
+  }
+
+  /**
+   * On key down, if it's a formatting command toggle a mark.
+   *
+   * @param {Event} event
+   * @param {Editor} editor
+   * @return {Change}
+   */
+
+  onKeyDown = (event, editor, next) => {
+    let mark
+
+    if (isBoldHotkey(event)) {
+      mark = 'bold'
+    } else if (isItalicHotkey(event)) {
+      mark = 'italic'
+    } else if (isUnderlinedHotkey(event)) {
+      mark = 'underlined'
+    } else if (isCodeHotkey(event)) {
+      mark = 'code'
+    } else {
+      return next()
+    }
+
+    event.preventDefault()
+    editor.toggleMark(mark)
+  }
+
+  /**
+   * When a mark button is clicked, toggle the current mark.
+   *
+   * @param {Event} event
+   * @param {String} type
+   */
+
+  onClickMark = (event, type) => {
+    event.preventDefault()
+    this.editor.toggleMark(type)
+  }
+
+  /**
+   * When a block button is clicked, toggle the block type.
+   *
+   * @param {Event} event
+   * @param {String} type
+   */
+
+  onClickBlock = (event, type) => {
+    event.preventDefault()
+
+    const { editor } = this
+    const { value } = editor
+    const { document } = value
+
+    // Handle everything but list buttons.
+    if (type != 'bulleted-list' && type != 'numbered-list') {
+      const isActive = this.hasBlock(type)
+      const isList = this.hasBlock('list-item')
+
+      if (isList) {
+        editor
+          .setBlocks(isActive ? DEFAULT_NODE : type)
+          .unwrapBlock('bulleted-list')
+          .unwrapBlock('numbered-list')
+      } else {
+        editor.setBlocks(isActive ? DEFAULT_NODE : type)
+      }
+    } else {
+      // Handle the extra wrapping required for list buttons.
+      const isList = this.hasBlock('list-item')
+      const isType = value.blocks.some(block => {
+        return !!document.getClosest(block.key, parent => parent.type == type)
+      })
+
+      if (isList && isType) {
+        editor
+          .setBlocks(DEFAULT_NODE)
+          .unwrapBlock('bulleted-list')
+          .unwrapBlock('numbered-list')
+      } else if (isList) {
+        editor
+          .unwrapBlock(
+            type == 'bulleted-list' ? 'numbered-list' : 'bulleted-list'
+          )
+          .wrapBlock(type)
+      } else {
+        editor.setBlocks('list-item').wrapBlock(type)
+      }
+    }
+  }
+
+  onClickImage = event => {
+    event.preventDefault()
+    const src = window.prompt('Enter the URL of the image:')
+    if (!src) return
+    this.editor.command(insertImage, src)
+  }
+  
+
 
 }
+
+
 export default TextEditor;
