@@ -19,19 +19,9 @@ import {ic_format_list_numbered} from 'react-icons-kit/md/ic_format_list_numbere
 import {quoteSerifLeft} from 'react-icons-kit/iconic/quoteSerifLeft'
 import {image} from 'react-icons-kit/iconic/image';
 
-/**
- * Define the default node type.
- *
- * @type {String}
- */
 
 const DEFAULT_NODE = 'paragraph'
 
-/**
- * Define hotkey matchers.
- *
- * @type {Function}
- */
 
 const isBoldHotkey = isKeyHotkey('mod+b')
 const isItalicHotkey = isKeyHotkey('mod+i')
@@ -47,24 +37,11 @@ const Image = styled('img')`
   box-shadow: ${props => (props.selected ? '0 0 0 2px blue;' : 'none')};
 `
 
-/*
- * A function to determine whether a URL has an image extension.
- *
- * @param {String} url
- * @return {Boolean}
- */
 
 function isImage(url) {
   return !!imageExtensions.find(url.endsWith)
 }
 
-/**
- * A change function to standardize inserting images.
- *
- * @param {Editor} editor
- * @param {String} src
- * @param {Range} target
- */
 
 function insertImage(editor, src, target) {
   if (target) {
@@ -98,27 +75,12 @@ const schema = {
 //
 
 class TextEditor extends Component {
-  /**
-   * Deserialize the initial editor value.
-   *
-   * @type {Object}
-   */
-
-  // state = {
-  //   // value: Value.fromJSON(initialValue),
-  //   value: Value.fromJSON(existingValue || initialValue),
-  // }
+  
   state ={
     value:Value.fromJSON(existingValue || initialValue),
   }
   
 
-  /**
-   * Check if the current selection has a mark with `type` in it.
-   *
-   * @param {String} type
-   * @return {Boolean}
-   */
 
   hasMark = type => {
     const { value } = this.state
