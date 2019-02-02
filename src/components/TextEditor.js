@@ -47,6 +47,7 @@ function isImage(url) {
 
 
 function insertImage(editor, src, target) {
+  // console.log(src, ' :: ', target, ' :: ', editor);
   if (target) {
     editor.select(target)
   }
@@ -101,26 +102,46 @@ class TextEditor extends Component {
     const { value } = this.state
     return value.blocks.some(node => node.type == type)
   }
-
-
   ref = editor => {
     this.editor = editor
   }
 
+  //image upload from local storage
+  fileSelectHandler = event =>{
+    // console.log(event.target.files[0]);
+    let input = event.target;
+    let editor = this.editor;
+
+    let reader = new FileReader();
+    
+    reader.onload = function(){
+      var src = reader.result;
+     
+      editor.insertBlock({
+          type: 'image',
+          data: { src },
+        })
+    };
+    reader.readAsDataURL(input.files[0]);
+
+  }
   
 
   render() {
     return (
       <div>
         <Toolbar>
+          <input type="file" onChange= {this.fileSelectHandler}/>
           <Button onMouseDown={this.onClickImage}>
             <Icon icon={image}/>
           </Button>
           <Button onMouseDown={this.onClickSave}>
-            <Icon icon={save}/>
+            {/* <Icon icon={save}/> */}
+            Save
           </Button>
           <Button onMouseDown={this.onClickCancle}>
-            <Icon icon={backward}/>
+            {/* <Icon icon={backward}/> */}
+            Cancle
           </Button>
           
           {/* <input type='file'/> */}
@@ -150,14 +171,7 @@ class TextEditor extends Component {
     )
   }
 
-  /**
-   * Render a mark-toggling toolbar button.
-   *
-   * @param {String} type
-   * @param {String} icon
-   * @return {Element}
-   */
-
+  
   renderMarkButton = (type, icon) => {
     const isActive = this.hasMark(type)
 
@@ -219,7 +233,8 @@ class TextEditor extends Component {
       case 'numbered-list':
         return <ol {...attributes}>{children}</ol>
       case 'image': {
-        const src = node.data.get('src')
+        const src = node.data.get('src');
+        // console.log('src', src);
         return <Image src={src} {...attributes} />
       }
       default:
@@ -270,7 +285,9 @@ class TextEditor extends Component {
   onClickCancle = (event)=>{
     let localValue = JSON.parse(localStorage.getItem('content'));
     let value = Value.fromJSON(localValue);
-    this.setState({ value })
+    this.setState({
+       value:value 
+      })
   }
 
 
