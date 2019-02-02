@@ -1,9 +1,8 @@
 import { Editor } from 'slate-react';
 import {Block, Value } from 'slate';
 import Icon from 'react-icons-kit';
-import styled from '@emotion/styled'
-import imageExtensions from 'image-extensions'
-
+import styled from '@emotion/styled';
+import imageExtensions from 'image-extensions';
 
 import React, {Component} from 'react'
 import initialValue from '../data/value.json'
@@ -18,6 +17,8 @@ import {ic_format_underlined} from 'react-icons-kit/md/ic_format_underlined'
 import {ic_format_list_numbered} from 'react-icons-kit/md/ic_format_list_numbered'
 import {quoteSerifLeft} from 'react-icons-kit/iconic/quoteSerifLeft'
 import {image} from 'react-icons-kit/iconic/image';
+import {save} from 'react-icons-kit/entypo/save';
+import {backward} from 'react-icons-kit/metrize/backward';
 
 
 const DEFAULT_NODE = 'paragraph'
@@ -36,7 +37,9 @@ const Image = styled('img')`
   max-height: 20em;
   box-shadow: ${props => (props.selected ? '0 0 0 2px blue;' : 'none')};
 `
-
+const TabIndent = styled('span')`
+  margin-left: 30px;
+`
 
 function isImage(url) {
   return !!imageExtensions.find(url.endsWith)
@@ -99,21 +102,12 @@ class TextEditor extends Component {
     return value.blocks.some(node => node.type == type)
   }
 
-  /**
-   * Store a reference to the `editor`.
-   *
-   * @param {Editor} editor
-   */
 
   ref = editor => {
     this.editor = editor
   }
 
-  /**
-   * Render.
-   *
-   * @return {Element}
-   */
+  
 
   render() {
     return (
@@ -122,6 +116,14 @@ class TextEditor extends Component {
           <Button onMouseDown={this.onClickImage}>
             <Icon icon={image}/>
           </Button>
+          <Button onMouseDown={this.onClickSave}>
+            <Icon icon={save}/>
+          </Button>
+          <Button onMouseDown={this.onClickCancle}>
+            <Icon icon={backward}/>
+          </Button>
+          
+          {/* <input type='file'/> */}
           {this.renderMarkButton('bold', bold)}
           {this.renderMarkButton('italic', italic)}
           {this.renderMarkButton('underlined', ic_format_underlined)}
@@ -169,13 +171,7 @@ class TextEditor extends Component {
     )
   }
 
-  /**
-   * Render a block-toggling toolbar button.
-   *
-   * @param {String} type
-   * @param {String} icon
-   * @return {Element}
-   */
+  
 
   renderBlockButton = (type, icon) => {
     let isActive = this.hasBlock(type)
@@ -262,18 +258,21 @@ class TextEditor extends Component {
    */
 
   onChange = ({ value }) => {
-    const content = JSON.stringify(value.toJSON())
+    // const content = JSON.stringify(value.toJSON())
+    // localStorage.setItem('content', content)
+    this.setState({ value })
+  }
+  onClickSave = ()=>{
+    let content = JSON.stringify(this.state.value);
     localStorage.setItem('content', content)
+  }
+
+  onClickCancle = (event)=>{
+    let localValue = JSON.parse(localStorage.getItem('content'));
+    let value = Value.fromJSON(localValue);
     this.setState({ value })
   }
 
-  /**
-   * On key down, if it's a formatting command toggle a mark.
-   *
-   * @param {Event} event
-   * @param {Editor} editor
-   * @return {Change}
-   */
 
   onKeyDown = (event, editor, next) => {
     let mark
