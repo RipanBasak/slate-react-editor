@@ -21,13 +21,14 @@ import {save} from 'react-icons-kit/entypo/save';
 import {backward} from 'react-icons-kit/metrize/backward';
 
 
-const DEFAULT_NODE = 'paragraph'
+const DEFAULT_NODE = 'paragraph';
 
 
-const isBoldHotkey = isKeyHotkey('mod+b')
-const isItalicHotkey = isKeyHotkey('mod+i')
-const isUnderlinedHotkey = isKeyHotkey('mod+u')
-const isCodeHotkey = isKeyHotkey('mod+`')
+const isBoldHotkey = isKeyHotkey('mod+b');
+const isItalicHotkey = isKeyHotkey('mod+i');
+const isUnderlinedHotkey = isKeyHotkey('mod+u');
+const isCodeHotkey = isKeyHotkey('mod+`');
+const isTabIndentkey = isKeyHotkey('Tab');
 
 // Update the initial content to be pulled from Local Storage if it exists.
 const existingValue = JSON.parse(localStorage.getItem('content'));
@@ -37,9 +38,16 @@ const Image = styled('img')`
   max-height: 20em;
   box-shadow: ${props => (props.selected ? '0 0 0 2px blue;' : 'none')};
 `
-const TabIndent = styled('span')`
-  margin-left: 30px;
-`
+// const TabIndent = styled('span')`
+//   margin-left: 30px;
+// `
+function TabIndent(props){
+  return(
+    <span style={{ marginLeft: 30}}>
+      {props.children}
+    </span>
+  )
+}
 
 function isImage(url) {
   return !!imageExtensions.find(url.endsWith)
@@ -192,9 +200,10 @@ class TextEditor extends Component {
 
     if (['numbered-list', 'bulleted-list'].includes(type)) {
       const { value: { document, blocks } } = this.state
-
+      // console.log('**',this.state, ' ::: ', document, ':: ', blocks);
       if (blocks.size > 0) {
         const parent = document.getParent(blocks.first().key)
+        // console.log(parent, blocks.first().key);
         isActive = this.hasBlock('list-item') && parent && parent.type === type
       }
     }
@@ -237,6 +246,8 @@ class TextEditor extends Component {
         // console.log('src', src);
         return <Image src={src} {...attributes} />
       }
+      case 'tabindent':
+        return (<TabIndent {...props}/>)
       default:
         return next()
     }
@@ -261,6 +272,10 @@ class TextEditor extends Component {
         return <em {...attributes}>{children}</em>
       case 'underlined':
         return <u {...attributes}>{children}</u>
+      case 'tab-indent': {
+        // console.log('src', src);
+        return <TabIndent {...attributes} />
+      }
       default:
         return next()
     }
@@ -294,20 +309,40 @@ class TextEditor extends Component {
   onKeyDown = (event, editor, next) => {
     let mark
 
+    if(!event.shiftKey && event.key == 'Tab'){
+      // let isCode = editor.value.blocks.some(block => block.type == 'tabindent');
+      // editor.setBlocks(isCode? 'paragraph':'tabindent');
+      editor.setBlocks('tabindent');
+    }
+    if(event.shiftKey && event.key == 'Tab'){
+      let isCode = editor.value.blocks.some(block => block.type == 'tabindent');
+      editor.setBlocks(isCode? 'paragraph':'tabindent');
+      // editor.setBlocks('tabindent');
+    }
+
     if (isBoldHotkey(event)) {
       mark = 'bold'
+      event.preventDefault()
+    editor.toggleMark(mark)
     } else if (isItalicHotkey(event)) {
       mark = 'italic'
+      event.preventDefault()
+    editor.toggleMark(mark)
     } else if (isUnderlinedHotkey(event)) {
       mark = 'underlined'
+      event.preventDefault()
+    editor.toggleMark(mark)
     } else if (isCodeHotkey(event)) {
       mark = 'code'
-    } else {
+      event.preventDefault()
+    editor.toggleMark(mark)
+    }
+    else {
       return next()
     }
 
-    event.preventDefault()
-    editor.toggleMark(mark)
+    // event.preventDefault()
+    // editor.toggleMark(mark)
   }
 
   /**
@@ -331,10 +366,12 @@ class TextEditor extends Component {
 
   onClickBlock = (event, type) => {
     event.preventDefault()
+    
 
     const { editor } = this
     const { value } = editor
     const { document } = value
+    console.log(type, editor);
 
     // Handle everything but list buttons.
     if (type != 'bulleted-list' && type != 'numbered-list') {
