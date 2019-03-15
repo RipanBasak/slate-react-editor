@@ -19,6 +19,8 @@ import {quoteSerifLeft} from 'react-icons-kit/iconic/quoteSerifLeft'
 import {image} from 'react-icons-kit/iconic/image';
 import {save} from 'react-icons-kit/entypo/save';
 import {backward} from 'react-icons-kit/metrize/backward';
+import EditList from 'slate-edit-list'
+
 
 
 const DEFAULT_NODE = 'paragraph';
